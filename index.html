@@ -8,15 +8,20 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{
   width:100%;height:100%;
+  overflow:hidden;
   background:#1a1a2e;
   font-family:sans-serif;
-  overflow:hidden;
 }
 #R{
-  width:100%;height:100%;
+  width:100vw;
+  height:100vh;
   display:flex;
+  flex-direction:column;
   align-items:center;
   justify-content:center;
+  overflow:hidden;
+  gap:6px;
+  padding:8px;
 }
 input::-webkit-inner-spin-button{-webkit-appearance:none}
 </style>
@@ -26,7 +31,8 @@ input::-webkit-inner-spin-button{-webkit-appearance:none}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script>
-const{useState,useEffect,useRef,useCallback}=React;
+const{useState,useEffect,useRef}=React;
+const e=React.createElement;
 const S=60,M=60,H=24,SZ=10;
 const gd=(s,n)=>180+(s%n)*(360/n);
 const td=(i,n)=>180+i*(360/n)-(360/n)/2;
@@ -34,10 +40,10 @@ const tr=d=>d*Math.PI/180;
 const pad=n=>String(n).padStart(2,"0");
 
 function iB(n){const b=Array(n).fill(0);b[0]=1;b[1]=2;return b;}
-function sB(bl,p,n){const nx=[...bl];for(let o=0;o<3;o++){const i=(p+o)%n;nx[i]=(nx[i]+2)%3;}return nx;}
+function sB2(bl,p,n){const nx=[...bl];for(let o=0;o<3;o++){const i=(p+o)%n;nx[i]=(nx[i]+2)%3;}return nx;}
 function build(total){
   const sec=total%60,min=Math.floor(total/60)%60,hr=Math.floor(total/3600)%24;
-  function ring(k,N){let b=iB(N);for(let i=0;i<k%N;i++)b=sB(b,i,N);return b;}
+  function ring(k,N){let b=iB(N);for(let i=0;i<k%N;i++)b=sB2(b,i,N);return b;}
   return{total,sec,min,hr,sB:ring(sec,S),mB:ring(min,M),hB:ring(hr,H)};
 }
 function getNow(){const d=new Date();return d.getHours()*3600+d.getMinutes()*60+d.getSeconds();}
@@ -56,14 +62,15 @@ function playTick(ctx,t,isM){
   });
 }
 
-function verts(tx,ty,deg){
-  const a=tr(deg),ap=[tx+SZ*Math.cos(a),ty+SZ*Math.sin(a)];
-  const bx=tx-SZ*.5*Math.cos(a),by=ty-SZ*.5*Math.sin(a);
-  const px=Math.cos(a+Math.PI/2),py=Math.sin(a+Math.PI/2),hw=SZ*Math.sqrt(3)/2;
+function verts(tx,ty,deg,sz){
+  const a=tr(deg),ap=[tx+sz*Math.cos(a),ty+sz*Math.sin(a)];
+  const bx=tx-sz*.5*Math.cos(a),by=ty-sz*.5*Math.sin(a);
+  const px=Math.cos(a+Math.PI/2),py=Math.sin(a+Math.PI/2),hw=sz*Math.sqrt(3)/2;
   return[ap,[bx+hw*px,by+hw*py],[bx-hw*px,by-hw*py]];
 }
 
-function Ring({n,R,bl,aL,aR,col,fA,sp,sr,sL,sR,nums,CX,CY}){
+function Ring({n,R,bl,aL,aR,col,fA,sp,sr,sL,sR,nums,CX,CY,sc}){
+  const sz=SZ*sc;
   const els=[];
   for(let i=0;i<n;i++){
     const isA=i===aL||i===aR,base=td(i,n);
@@ -71,42 +78,43 @@ function Ring({n,R,bl,aL,aR,col,fA,sp,sr,sL,sR,nums,CX,CY}){
     if(sp===1&&i===sL)deg=base+sr;
     if(sp===2&&i===sR)deg=base+sr;
     const rad=tr(base),tx=CX+R*Math.cos(rad),ty=CY+R*Math.sin(rad);
-    const v=verts(tx,ty,deg),poly=v.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ");
+    const v=verts(tx,ty,deg,sz),poly=v.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ");
     const idx=bl[i],b1=idx===0?v[1]:v[0],b2=idx===0?v[2]:idx===1?v[1]:v[2];
     const lx=(v[0][0]+v[1][0]+v[2][0])/3,ly=(v[0][1]+v[1][1]+v[2][1])/3;
     els.push(
-      React.createElement("g",{key:i},
-        React.createElement("polygon",{points:poly,fill:isA?fA:"#f2f2f2",stroke:isA?col:"#bbb",strokeWidth:isA?1.4:.6}),
-        React.createElement("line",{x1:b1[0],y1:b1[1],x2:b2[0],y2:b2[1],stroke:isA?col:"#777",strokeWidth:isA?2.8:1.6,strokeLinecap:"round"}),
-        nums&&React.createElement("text",{x:lx,y:ly+.3,textAnchor:"middle",dominantBaseline:"middle",fontSize:4,fill:isA?col:"#bbb",fontWeight:isA?"bold":"normal"},i+1)
+      e("g",{key:i},
+        e("polygon",{points:poly,fill:isA?fA:"#f2f2f2",stroke:isA?col:"#bbb",strokeWidth:isA?1.4:.6}),
+        e("line",{x1:b1[0],y1:b1[1],x2:b2[0],y2:b2[1],stroke:isA?col:"#777",strokeWidth:isA?2.8*sc:1.6*sc,strokeLinecap:"round"}),
+        nums&&e("text",{x:lx,y:ly+.3,textAnchor:"middle",dominantBaseline:"middle",fontSize:4*sc,fill:isA?col:"#bbb",fontWeight:isA?"bold":"normal"},i+1)
       )
     );
   }
   return els;
 }
 
-const e=React.createElement;
+function useDim(){
+  const calc=()=>{
+    // Вычисляем доступное пространство за вычетом UI элементов (кнопки + цифровые часы ~100px)
+    const uiH=100;
+    const avW=window.innerWidth-16;
+    const avH=window.innerHeight-uiH-24;
+    return Math.max(180,Math.min(avW,avH));
+  };
+  const[dim,setDim]=useState(calc);
+  useEffect(()=>{
+    const h=()=>setDim(calc());
+    window.addEventListener("resize",h);
+    return()=>window.removeEventListener("resize",h);
+  },[]);
+  return dim;
+}
 
 function App(){
-  // Responsive: derive W from window size
-  const[dim,setDim]=useState(()=>{
-    const s=Math.min(window.innerWidth,window.innerHeight);
-    return Math.max(220,Math.floor(s*0.92));
-  });
-  useEffect(()=>{
-    const onResize=()=>{
-      const s=Math.min(window.innerWidth,window.innerHeight);
-      setDim(Math.max(220,Math.floor(s*0.92)));
-    };
-    window.addEventListener("resize",onResize);
-    return()=>window.removeEventListener("resize",onResize);
-  },[]);
-
-  // Все размеры пропорциональны dim
+  const dim=useDim();
+  const sc=dim/380;
   const W=dim,CX=dim/2,CY=dim/2;
-  const scale=dim/380;
-  const RS=Math.round(152*scale),RM=Math.round(118*scale),RH=Math.round(84*scale);
-  const rBg=RS+Math.round(SZ*scale)+Math.round(12*scale);
+  const RS=Math.round(152*sc),RM=Math.round(118*sc),RH=Math.round(84*sc);
+  const rBg=RS+Math.round((SZ+12)*sc);
 
   const[mode,setMode]=useState("real");
   const[st,setSt]=useState(()=>build(getNow()));
@@ -125,7 +133,7 @@ function App(){
     if(acR.current.state==="suspended")acR.current.resume();
     return acR.current;
   }
-  function pt(isM){if(!snR.current)return;try{const c=getAC();playTick(c,c.currentTime,isM);}catch(e2){}}
+  function pt(isM){if(!snR.current)return;try{const c=getAC();playTick(c,c.currentTime,isM);}catch(ex){}}
   function spin(getT){
     cancelAnimationFrame(spR.current);
     const next=getT();pt(next%60===0);
@@ -168,71 +176,55 @@ function App(){
   useEffect(()=>()=>{clearTimeout(tmR.current);cancelAnimationFrame(spR.current);},[]);
 
   const{sec,min,hr,sB:sb,mB:mb,hB:hb}=st;
-  const sL=sec,sR=(sec+1)%S,mL=min,mR=(min+1)%M,hL=hr,hR=(hr+1)%H;
+  const sL=sec,sR2=(sec+1)%S,mL=min,mR=(min+1)%M,hL=hr,hR=(hr+1)%H;
   const sA=tr(gd(sec,S)),mA=tr(gd(min,M)),hA=tr(gd(hr,H));
   const isDay=hr>=6&&hr<18;
   const x6=CX+rBg*Math.cos(tr(270)),y6=CY+rBg*Math.sin(tr(270));
   const x18=CX+rBg*Math.cos(tr(90)),y18=CY+rBg*Math.sin(tr(90));
 
-  const fs=n=>Math.max(9,Math.round(n*scale));
-  const btnStyle=(active,col)=>({
-    padding:`${fs(4)}px ${fs(9)}px`,
-    borderRadius:fs(8),border:"none",
-    fontSize:fs(11),fontWeight:"bold",
-    background:active?(col||"#c0186a"):"#2a2a3e",
-    color:active?"white":"#888",cursor:"pointer"
-  });
+  const fs=n=>Math.max(9,Math.round(n*sc));
+  const btnSt=(on,bg)=>({padding:`4px ${fs(9)}px`,borderRadius:6,border:"none",
+    fontSize:Math.max(10,fs(11)),fontWeight:"bold",
+    background:on?(bg||"#c0186a"):"#2a2a3e",color:on?"white":"#888",cursor:"pointer"});
 
   return e("div",{style:{
-    width:"100vw",height:"100vh",
-    background:"#1a1a2e",
+    width:"100vw",height:"100vh",background:"#1a1a2e",
     display:"flex",flexDirection:"column",
     alignItems:"center",justifyContent:"center",
-    overflow:"hidden",
-    gap:fs(5)
+    overflow:"hidden",gap:6,padding:8
   }},
-
-    // Верхняя панель кнопок
-    e("div",{style:{display:"flex",gap:fs(5),alignItems:"center",flexWrap:"wrap",justifyContent:"center"}},
+    // Кнопки режимов
+    e("div",{style:{display:"flex",gap:5,alignItems:"center",flexWrap:"wrap",justifyContent:"center",flexShrink:0}},
       ...[["real","🕐 Real"],["manual","✏️ Set"],["free","▶ Free"]].map(([m,lb])=>
-        e("button",{key:m,onClick:()=>sw(m),style:btnStyle(mode===m)},lb)
+        e("button",{key:m,onClick:()=>sw(m),style:btnSt(mode===m)},lb)
       ),
-      e("button",{onClick:()=>setSnd(s=>!s),style:{
-        padding:`${fs(4)}px ${fs(7)}px`,borderRadius:fs(8),border:"none",
-        fontSize:fs(14),background:snd?"#2a3a2a":"#3a2a2a",cursor:"pointer"
-      }},snd?"🔊":"🔇")
+      e("button",{onClick:()=>setSnd(s=>!s),style:{padding:"4px 8px",borderRadius:6,border:"none",
+        fontSize:14,background:snd?"#2a3a2a":"#3a2a2a",cursor:"pointer"}},snd?"🔊":"🔇")
     ),
 
     // Мануальный ввод
-    mode==="manual"&&e("div",{style:{background:"#2a2a3e",borderRadius:fs(12),padding:`${fs(7)}px ${fs(11)}px`,display:"flex",flexDirection:"column",alignItems:"center",gap:fs(6)}},
-      e("div",{style:{display:"flex",gap:fs(6),alignItems:"center"}},
-        ...[["H",mH,setMH,24],["M",mM,setMM,60],["S",mS,setMS,60]].map(([lb,v,set,mx])=>
-          e("div",{key:lb,style:{display:"flex",flexDirection:"column",alignItems:"center"}},
-            e("span",{style:{fontSize:fs(9),color:"#888",marginBottom:2}},lb),
-            e("input",{type:"number",min:0,max:mx-1,value:v,onChange:ev=>set(ev.target.value),
-              style:{width:fs(42),textAlign:"center",fontSize:fs(16),fontWeight:"bold",
-                background:"#111",color:"white",border:"1px solid #444",borderRadius:fs(6),padding:`${fs(3)}px ${fs(2)}px`}
-            })
-          )
-        ),
-        e("button",{onClick:apply,style:{
-          padding:`${fs(7)}px ${fs(11)}px`,borderRadius:fs(8),
-          background:"#444",color:"white",border:"none",
-          fontWeight:"bold",fontSize:fs(12),cursor:"pointer",marginTop:fs(10)
-        }},"SET")
-      )
+    mode==="manual"&&e("div",{style:{background:"#2a2a3e",borderRadius:10,padding:"6px 10px",
+      display:"flex",gap:6,alignItems:"flex-end",flexShrink:0}},
+      ...[["H",mH,setMH,24],["M",mM,setMM,60],["S",mS,setMS,60]].map(([lb,v,set,mx])=>
+        e("div",{key:lb,style:{display:"flex",flexDirection:"column",alignItems:"center"}},
+          e("span",{style:{fontSize:9,color:"#888",marginBottom:2}},lb),
+          e("input",{type:"number",min:0,max:mx-1,value:v,onChange:ev=>set(ev.target.value),
+            style:{width:40,textAlign:"center",fontSize:15,fontWeight:"bold",
+              background:"#111",color:"white",border:"1px solid #444",borderRadius:5,padding:"2px"}})
+        )
+      ),
+      e("button",{onClick:apply,style:{padding:"6px 10px",borderRadius:7,background:"#444",
+        color:"white",border:"none",fontWeight:"bold",fontSize:11,cursor:"pointer"}},"SET")
     ),
 
     // Цифровые часы
-    e("div",{style:{
-      background:"#0a0a12",border:"1px solid #333",borderRadius:fs(12),
-      padding:`${fs(5)}px ${fs(18)}px`,textAlign:"center",minWidth:fs(220)
-    }},
-      e("div",{style:{fontSize:fs(9),color:"#555",letterSpacing:2,marginBottom:2}},
+    e("div",{style:{background:"#0a0a12",border:"1px solid #333",borderRadius:10,
+      padding:"4px 16px",textAlign:"center",flexShrink:0}},
+      e("div",{style:{fontSize:9,color:"#555",letterSpacing:2,marginBottom:1}},
         (mode==="real"?"REAL TIME":mode==="manual"?"MANUAL":"FREE RUN")+" · "+(isDay?"☀ DAY":"☾ NIGHT"),
         mode!=="real"&&e("span",{style:{color:run?"#4f4":"#f44",marginLeft:6}},run?"● RUN":"■ STOP")
       ),
-      e("div",{style:{fontSize:fs(34),fontWeight:"bold",letterSpacing:4,fontFamily:"monospace"}},
+      e("div",{style:{fontSize:Math.max(22,fs(30)),fontWeight:"bold",letterSpacing:4,fontFamily:"monospace",lineHeight:1.1}},
         e("span",{style:{color:"#f0a000"}},pad(hr)),
         e("span",{style:{color:"#444"}},":"),
         e("span",{style:{color:"#1a6aff"}},pad(min)),
@@ -241,69 +233,63 @@ function App(){
       )
     ),
 
-    // SVG Часы
-    e("div",{style:{background:"white",border:"1px solid #ddd",borderRadius:fs(16),padding:fs(3),lineHeight:0}},
+    // SVG — занимает оставшееся пространство
+    e("div",{style:{background:"white",border:"1px solid #ddd",borderRadius:fs(14),
+      padding:2,lineHeight:0,flexShrink:0}},
       e("svg",{
-        width:W,height:W,
         viewBox:`0 0 ${W} ${W}`,
-        style:{display:"block",width:`min(${Math.round(dim)}px, 90vw, 80vh)`,height:"auto"}
+        style:{display:"block",width:dim+"px",height:dim+"px",
+          maxWidth:"calc(100vw - 16px)",maxHeight:`calc(100vh - 104px)`}
       },
         e("circle",{cx:CX,cy:CY,r:rBg,fill:"#f8f6f0"}),
         e("path",{d:`M${CX},${CY} L${x6},${y6} A${rBg},${rBg},0,1,1,${x18},${y18} Z`,fill:"#ddeeff",opacity:.4}),
         e("line",{x1:x6,y1:y6,x2:x18,y2:y18,stroke:"#ccc",strokeWidth:.7,strokeDasharray:"3,3"}),
-        e("text",{x:CX-52*scale,y:CY,textAnchor:"middle",dominantBaseline:"middle",fontSize:fs(6.5),fill:"#ccc"},"NIGHT"),
-        e("text",{x:CX+52*scale,y:CY,textAnchor:"middle",dominantBaseline:"middle",fontSize:fs(6.5),fill:"#99aacc"},"DAY"),
+        e("text",{x:CX-52*sc,y:CY,textAnchor:"middle",dominantBaseline:"middle",fontSize:Math.max(6,6.5*sc),fill:"#ccc"},"NIGHT"),
+        e("text",{x:CX+52*sc,y:CY,textAnchor:"middle",dominantBaseline:"middle",fontSize:Math.max(6,6.5*sc),fill:"#99aacc"},"DAY"),
 
-        // Тики
         ...Array.from({length:60},(_,s)=>{
           const rad=tr(gd(s,S)),major=s%5===0;
-          return e("line",{key:s,
-            x1:CX+(RS+Math.round(SZ*scale)+2)*Math.cos(rad),y1:CY+(RS+Math.round(SZ*scale)+2)*Math.sin(rad),
-            x2:CX+(RS+Math.round(SZ*scale)+2-(major?10:5)*scale)*Math.cos(rad),
-            y2:CY+(RS+Math.round(SZ*scale)+2-(major?10:5)*scale)*Math.sin(rad),
+          const r1=RS+Math.round((SZ+2)*sc),r2=r1-(major?10:5)*sc;
+          return e("line",{key:s,x1:CX+r1*Math.cos(rad),y1:CY+r1*Math.sin(rad),
+            x2:CX+r2*Math.cos(rad),y2:CY+r2*Math.sin(rad),
             stroke:s===sec?"#c0186a":major?"#bbb":"#ddd",
-            strokeWidth:s===sec?2.5:major?1.2:.6
-          });
+            strokeWidth:s===sec?2.5*sc:major?1.2*sc:.6*sc});
         }),
 
-        // Часовые метки
         ...Array.from({length:24},(_,h)=>{
           const rad=tr(180+h*15),major=h%6===0;
-          const lr=(RS+Math.round(SZ*scale)+2)+(major?14:9)*scale;
+          const lr=(RS+Math.round((SZ+2)*sc))+(major?14:9)*sc;
           const x=Math.max(10,Math.min(W-10,CX+lr*Math.cos(rad)));
           const y=Math.max(10,Math.min(W-10,CY+lr*Math.sin(rad)));
           return e("text",{key:h,x,y,textAnchor:"middle",dominantBaseline:"middle",
-            fontSize:major?fs(10):fs(6),fontWeight:major?"bold":"normal",
-            fill:major?(h<6||h>=18?"#5577bb":"#bb8800"):"#ccc"
-          },pad(h));
+            fontSize:major?Math.max(8,10*sc):Math.max(5,6*sc),
+            fontWeight:major?"bold":"normal",
+            fill:major?(h<6||h>=18?"#5577bb":"#bb8800"):"#ccc"},pad(h));
         }),
 
-        // Стрелки
-        e("line",{x1:CX,y1:CY,x2:CX+(RH-Math.round(SZ*scale)-4)*Math.cos(hA),y2:CY+(RH-Math.round(SZ*scale)-4)*Math.sin(hA),stroke:"#f0a000",strokeWidth:2.5*scale}),
-        e("line",{x1:CX,y1:CY,x2:CX+(RM-Math.round(SZ*scale)-4)*Math.cos(mA),y2:CY+(RM-Math.round(SZ*scale)-4)*Math.sin(mA),stroke:"#1a6aff",strokeWidth:2*scale}),
-        e("line",{x1:CX,y1:CY,x2:CX+(RS-Math.round(SZ*scale)-4)*Math.cos(sA),y2:CY+(RS-Math.round(SZ*scale)-4)*Math.sin(sA),stroke:"#c0186a",strokeWidth:2.2*scale}),
-        e("circle",{cx:CX,cy:CY,r:5*scale,fill:"#222"}),
+        e("line",{x1:CX,y1:CY,x2:CX+(RH-Math.round((SZ+4)*sc))*Math.cos(hA),y2:CY+(RH-Math.round((SZ+4)*sc))*Math.sin(hA),stroke:"#f0a000",strokeWidth:Math.max(1,2.5*sc)}),
+        e("line",{x1:CX,y1:CY,x2:CX+(RM-Math.round((SZ+4)*sc))*Math.cos(mA),y2:CY+(RM-Math.round((SZ+4)*sc))*Math.sin(mA),stroke:"#1a6aff",strokeWidth:Math.max(1,2*sc)}),
+        e("line",{x1:CX,y1:CY,x2:CX+(RS-Math.round((SZ+4)*sc))*Math.cos(sA),y2:CY+(RS-Math.round((SZ+4)*sc))*Math.sin(sA),stroke:"#c0186a",strokeWidth:Math.max(1,2.2*sc)}),
+        e("circle",{cx:CX,cy:CY,r:Math.max(3,5*sc),fill:"#222"}),
 
-        e(Ring,{n:H,R:RH,bl:hb,aL:hL,aR:hR,col:"#f0a000",fA:"#fff8e0",sp:0,sr:0,sL:-1,sR:-1,nums:false,CX,CY}),
-        e(Ring,{n:M,R:RM,bl:mb,aL:mL,aR:mR,col:"#1a6aff",fA:"#ddeeff",sp:0,sr:0,sL:-1,sR:-1,nums:false,CX,CY}),
-        e(Ring,{n:S,R:RS,bl:sb,aL:sL,aR:sR,col:"#c0186a",fA:"#ffe0ef",sp,sr:sr2,sL,sR,nums:true,CX,CY})
+        e(Ring,{n:H,R:RH,bl:hb,aL:hL,aR:hR,col:"#f0a000",fA:"#fff8e0",sp:0,sr:0,sL:-1,sR:-1,nums:false,CX,CY,sc}),
+        e(Ring,{n:M,R:RM,bl:mb,aL:mL,aR:mR,col:"#1a6aff",fA:"#ddeeff",sp:0,sr:0,sL:-1,sR:-1,nums:false,CX,CY,sc}),
+        e(Ring,{n:S,R:RS,bl:sb,aL:sL,aR:sR2,col:"#c0186a",fA:"#ffe0ef",sp,sr:sr2,sL,sR:sR2,nums:true,CX,CY,sc})
       )
     ),
 
-    // Кнопки Free режима
-    mode==="free"&&e("div",{style:{display:"flex",gap:fs(7)}},
+    // Кнопки Free
+    mode==="free"&&e("div",{style:{display:"flex",gap:6,flexShrink:0}},
       ...[
         {lb:"◀",fn:()=>{stop();setSt(p=>build(Math.max(0,p.total-1)));},dis:run},
         {lb:run?"⏸ STOP":"▶ START",fn:tog,bg:run?"#c0186a":"#1a7a3a",cl:"white"},
         {lb:"▶",fn:()=>{if(!run)setSt(p=>build(p.total+1));},dis:run},
         {lb:"↺",fn:()=>{stop();setSt(build(0));}},
       ].map((b,i)=>e("button",{key:i,onClick:b.fn,disabled:b.dis,style:{
-        padding:`${fs(8)}px ${fs(12)}px`,borderRadius:fs(9),
-        border:"1px solid #333",
+        padding:"7px 11px",borderRadius:8,border:"1px solid #333",
         background:b.dis?"#111":b.bg||"#2a2a3e",
         color:b.dis?"#444":b.cl||"#aaa",
-        cursor:b.dis?"default":"pointer",
-        fontSize:fs(13),fontWeight:"bold"
+        cursor:b.dis?"default":"pointer",fontSize:12,fontWeight:"bold"
       }},b.lb))
     )
   );
